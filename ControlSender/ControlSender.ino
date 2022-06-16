@@ -7,12 +7,66 @@ String myString;
 
 uint8_t broadcastAddress[] = {0x58, 0xBF, 0x25, 0x99, 0xB9, 0x84};
 
-typedef struct controlMessage {
+typedef struct __attribute__((packed)) controlMessage {
   float steer;
   float throttle;
-} controlMessage;
+  bool manualDriving;
+  int16_t DPadSumX;
+  int16_t DPadSumY;
+  int16_t BumperSum;
+  bool A = false;
+  int8_t endSig;
+}controlMessage;
 
-controlMessage cData;
+
+typedef struct __attribute__((packed)) returnMessage {
+  int8_t startSig = 69;
+  float steer;
+  float throttle;
+  bool manualDriving = true;
+  int16_t DPadSumX;
+  int16_t DPadSumY;
+  int16_t BumperSum = 43;
+  bool A = false;
+  int8_t endSig = 96;
+}returnMessage;
+
+
+
+returnMessage getControlMessage() {
+  controlMessage cData;
+  returnMessage retData;
+  int8_t aByte;
+  byte messageBuffer[sizeof(cData)];
+  
+  aByte = Serial.read();
+  if (aByte == 69){
+    Serial.readBytes(messageBuffer, sizeof(messageBuffer));
+    memcpy(&cData, messageBuffer, sizeof(messageBuffer));
+    if (cData.endSig == 96){
+      retData.steer = cData.steer;
+      retData.throttle = cData.throttle;
+      retData.manualDriving = cData.manualDriving;
+      retData.DPadSumX = cData.DPadSumX;
+      retData.DPadSumY = cData.DPadSumY;
+      retData.BumperSum = cData.BumperSum;
+      retData.A = cData.A;
+      return retData;
+    } else{
+      retData.endSig = 95;
+      return retData;
+    }
+  }
+  else{
+    retData.endSig = 95;
+    return retData;
+  }
+}
+
+
+
+
+
 
 esp_now_peer_info_t peerInfo;
 
@@ -55,33 +109,61 @@ void setup() {
 
 }
 
+//byte messageBuffer[sizeof(cData)];
+int8_t byteFinder;
+int8_t startByte = 69;
+
+returnMessage rData;
+
 void loop() {
   // put your main code here, to run repeatedly:
-
-  if (Serial.available()>0){
-    myString = Serial.readStringUntil('\n');
-//    Serial.print("R ");
-
-    int i1 = myString.indexOf(',');
-    int i2 = myString.indexOf(']');
-    float num1 = myString.substring(1,i1).toFloat();
-    float num2 = myString.substring(i1+2,i2).toFloat();
-
-    cData.steer = num1;
-    cData.throttle = num2;
-
-    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &cData, sizeof(cData));
+  bool isData = false;
+  rData = getControlMessage();
+  if (rData.endSig == 96) {
+    Serial.write((byte*)&rData, sizeof(rData));
+  }
+  
+  
+//  Serial.readBytes(messageBuffer, sizeof(cData));
+//  memcpy(&cData, &messageBuffer, sizeof(cData));
 
 
-    if (result == ESP_OK){
-      Serial.println("Sending Confirmed");
-    } else{
-      Serial.println("Sending error");
-    }
+//  byteFinder = 0;
+//  byteFinder = Serial.read();
+//  if (byteFinder == 69){
+//    Serial.readBytes(messageBuffer, sizeof(messageBuffer));
+//    memcpy(&cData, messageBuffer, sizeof(cData));
+//    rData.steer = cData.steer;
+//    rData.throttle = cData.throttle;
+//    rData.manualDriving = cData.manualDriving;
+//    rData.DPadSumX = cData.DPadSumX;
+//    rData.DPadSumY = cData.DPadSumY;
+//    rData.BumperSum = cData.BumperSum;
+//    rData.A = cData.A;
+////    Serial.write((byte*)startByte, sizeof(startByte));
+////    cData.startSig = 69;
+//    Serial.write((byte*)&rData, sizeof(rData));
+////    delay(1000);
+//  }
+
+  
+  
+//  Serial.write(messageBuffer, sizeof(messageBuffer));
+  
+  
+
+
+//    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &cData, sizeof(cData));
+
+
+//    if (result == ESP_OK){
+//      Serial.println("Sending Confirmed");
+//    } else{
+//      Serial.println("Sending error");
+//    }
 
 //    Serial.print(num1);
 //    Serial.print(' ');
 //    Serial.println(num2);
-  }
 
 }
