@@ -157,6 +157,17 @@ void loop() {
     Serial.print(rData.throttle);
     Serial.print(",  ");
     Serial.println(mapfloat(rData.steer,-1,1,steerMax,steerMin));
+
+    if (rData.A == true) {
+      if (mpu.update()) {
+          static uint32_t prev_ms = millis();
+          if (millis() > prev_ms + 25) {
+            update_IMU_VALS();
+            rData = createReturnData(rData);
+            esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &rData, sizeof(returnMessage));
+          }
+        }
+    }
     
   } else { 
     // programmed manouver mode
@@ -180,6 +191,8 @@ void loop() {
         Serial.println(mapfloat(funcSteer,-1,1,steerMax,steerMin));
         steerServo.writeMicroseconds(mapfloat(funcSteer,-1,1,steerMax,steerMin));
 
+        throttleServo.writeMicroseconds(mapfloat(rData.throttle,-1,1,throttleMin,throttleMax));
+
         if (mpu.update()) {
           static uint32_t prev_ms = millis();
           if (millis() > prev_ms + 25) {
@@ -189,8 +202,7 @@ void loop() {
             esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &rData, sizeof(returnMessage));
           }
         }
-        update_IMU_VALS();
-        rData = createReturnData(rData);
+        
         
       }
     } else{

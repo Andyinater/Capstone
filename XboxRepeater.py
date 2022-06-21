@@ -116,8 +116,16 @@ class TestbedController(object):
             aBool = False
         
         controlSpeed = (self.RightTrigger - self.LeftTrigger)/4
-        if self.BumperSum != 0 & self.ManualDriveMode == True:
-            controlSpeed = 0.02*self.BumperSum
+        # if self.BumperSum != 0 & self.ManualDriveMode == True:
+        #     controlSpeed = 0.02*self.BumperSum
+            
+        if self.BumperSum != 0:
+            MaxS = 0.02*self.BumperSum
+            MinS = -1*MaxS
+            if controlSpeed > MaxS:
+                controlSpeed = MaxS
+            elif controlSpeed < MinS:
+                controlSpeed = MinS
             
         controlSteer = self.LeftJoystickX
         if self.DPadSumX != 0:
@@ -225,6 +233,16 @@ if __name__ == '__main__':
         if startFlag == "1":
             ProgMan = joy.getProgPars()
             
+            if joy.A:
+                rData = getData(serialcomm)
+                    
+                if rData != None:
+                    # print(rData[-1])
+                    ALLDATA.append(rData[-1])
+                else:
+                    # print(ProgMan)
+                    pass
+            
             if joy.ManualDriveMode:
                 if time.time() - lastTime > 1:
                     joy.printControllerData()
@@ -245,14 +263,7 @@ if __name__ == '__main__':
                 else:
                     sendBytes(ProgMan,serialcomm)
                     
-                    rData = getData(serialcomm)
                     
-                    if rData != None:
-                        # print(rData[-1])
-                        ALLDATA.append(rData[-1])
-                    else:
-                        # print(ProgMan)
-                        pass
             
             if time.time() - startTime > 2000:
                 break
