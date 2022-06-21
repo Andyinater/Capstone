@@ -40,11 +40,12 @@ def sendBytes(data,s):
     
 def getData(scomm):
     startByte = scomm.read()
-    if startByte[0] == 69:
-        body = scomm.read(33) # 18 before return IMU data (17), 34 after (33)
-        data = convertBytes(body)
-        
-        return [body,data]
+    if startByte != b'':
+        if startByte[0] == 69:
+            body = scomm.read(33) # 18 before return IMU data (17), 34 after (33)
+            data = convertBytes(body)
+            
+            return [body,data]
     
 
 
@@ -127,7 +128,8 @@ class TestbedController(object):
             elif controlSpeed < MinS:
                 controlSpeed = MinS
             
-        controlSteer = self.LeftJoystickX
+        SC = 4
+        controlSteer = self.LeftJoystickX + 0.02*SC
         if self.DPadSumX != 0:
             controlSteer = 0.02*self.DPadSumX
             
@@ -222,8 +224,8 @@ ALLDATA = []
 if __name__ == '__main__':
     joy = TestbedController()
     
-    serialcomm = serial.Serial(port = 'COM4',baudrate=115200,parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE,bytesize=serial.EIGHTBITS,)
-    serialcomm.timeout = None
+    serialcomm = serial.Serial(port = 'COM5',baudrate=115200,parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE,bytesize=serial.EIGHTBITS,)
+    serialcomm.timeout = 0.1
     while True:
         
         # cData = joy.getServoValues()
@@ -233,7 +235,21 @@ if __name__ == '__main__':
         if startFlag == "1":
             ProgMan = joy.getProgPars()
             
-            if joy.A:
+            if joy.Y: # Save log flag
+                if len(ALLDATA) > 0:
+                    print("SAVE DATA")
+                    fname = str(time.time()) + ".txt"
+                    f = open(fname,'w')
+                    for d in ALLDATA:
+                        for i in d:
+                            f.write(str(i))
+                            f.write("\t")
+                        f.write("\n")
+                    f.close()
+                    ALLDATA = []
+            
+            
+            if joy.A: # Datalog Flag
                 rData = getData(serialcomm)
                     
                 if rData != None:
@@ -265,7 +281,7 @@ if __name__ == '__main__':
                     
                     
             
-            if time.time() - startTime > 2000:
+            if time.time() - startTime > 20000:
                 break
             # cData = userToServo()
             
@@ -289,6 +305,7 @@ if __name__ == '__main__':
             if joy.A == 1:
                 startFlag = "1"
                 startTime = time.time()
+                print("started")
             pass
     
         
