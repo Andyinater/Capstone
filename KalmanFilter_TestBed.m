@@ -4,17 +4,23 @@ cf = cs;  % N/rad
 cr = cs;  % N/rad
 I = 0.093;  % Izz, kg*m^2
 
-b = 0.147; % m
-a = 0.164;
+a = 0.164; % m
+b = 0.147; 
+
+wb = a + b;
+fwf = b/wb;
+fwf = fwf - 0.0;
+b = fwf*wb
+a = wb-b
+
 m = 45.92/9.81;
-% u = 1
-u = 1.713; % m/s
+u = 1.4258 + 0; % m/s
 
 
 %% Get Time and Input series
 test = tdfread('RandomDrive.txt','\t');
 t = test.t;
-U = -(0.311/1.08)*(test.steer-0.0);
+U = -(0.311/1.08)*(test.steer-0.08);
 dt = 0.005; % approximately
 InputSeries = [t U];
 y2n = [test.Gr*(2*pi/360) -1*test.Ay];
@@ -25,7 +31,7 @@ CovarShape = [1 0; 0 1];
 
 % Create initial state and covariance matrices
 X_0 = [0;0];
-P_0 = 0*CovarShape;
+P_0 = 2*CovarShape;
 
 %Process error matrix
 Q = 0.5*CovarShape;
@@ -120,31 +126,31 @@ for i = 1:size(U,2) % For every input
     P_k0s(i,:) = [P_k0(1,:) P_k0(2,:)]; 
 end
 
-% Plot noisy measurements and kalman predictions
-figure('Name','Kalman Predicted Measurements vs time')
-% plot(t,y2,'-');
+% % Plot noisy measurements and kalman predictions
+% figure('Name','Kalman Predicted Measurements vs time | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
+% % plot(t,y2,'-');
+% % hold on
+% plot(t,y2n,'x');
 % hold on
-plot(t,y2n,'x');
-hold on
-plot(t,K_preds,'-','LineWidth',2)
-plot(t,test.steer,'-','LineWidth',2)
-% legend('Measured_r','Measured_a_y')%,'Kalman Predicted_1_,_r','Kalman Predicted_2_,_a_y');
-legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y','steer');
+% plot(t,K_preds,'-','LineWidth',2)
+% plot(t,test.steer,'-','LineWidth',2)
+% % legend('Measured_r','Measured_a_y')%,'Kalman Predicted_1_,_r','Kalman Predicted_2_,_a_y');
+% legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y','steer');
 
 
 
-figure('Name','Kalman Predicted States vs time')
-beta = K_Xs(:,1)/u;
-plot(t,K_Xs,'--');
-hold on
-plot(t,beta,'-');
-plot(t,test.steer,'-');
-legend('K_v','K_r','K_b','Steer');
+% figure('Name','Kalman Predicted States vs time  | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
+% beta = K_Xs(:,1)/u;
+% plot(t,K_Xs,'--');
+% hold on
+% plot(t,beta,'-');
+% plot(t,test.steer,'-');
+% legend('K_v','K_r','K_b','Steer');
 
 % figure('Name','Kalman Predicted Dots vs time')
 % plot(t,K_dots,'--')
 % legend('K_v_-_d_o_t','K_r_-_d_o_t')
-% 
+
 % 
 % figure('Name','Kalman Gain vs time')
 % plot(t,K11_gains)
@@ -153,24 +159,73 @@ legend('K_v','K_r','K_b','Steer');
 % plot(t,K21_gains)
 % plot(t,K22_gains)
 % legend('K11','K12','K21','K22')
-% 
+
 % figure('Name','P_kp vs time')
 % plot(t,P_kps)
 % 
 % figure('Name','P_k0 vs time')
 % plot(t,P_k0s)
 
-
 %% attempt time history solution
 dt = zeros(size(t));
 heading = zeros(size(t));
-x = zeros(size(t));
-y = zeros(size(t));
+car_x = zeros(size(t));
+car_y = zeros(size(t));
 for i = 1:size(t)-1
     dt(i) = t(i+1) - t(i);
     heading(i+1) = heading(i) + K_Xs(i,2)*dt(i);
-    x(i+1) = x(i) + (u*cos(heading(i)) + K_Xs(i,1)*sin(heading(i)))*dt(i);
-    y(i+1) = y(i) + (u*sin(heading(i)) + K_Xs(i,1)*cos(heading(i)))*dt(i);
+    car_x(i+1) = car_x(i) + ((u)*cos(heading(i)) + K_Xs(i,1)*sin(heading(i)))*dt(i);
+    car_y(i+1) = car_y(i) + ((u)*sin(heading(i)) + K_Xs(i,1)*cos(heading(i)))*dt(i);
 end
-figure('Name','Time History Solution')
-plot(x,y)
+
+% figure('Name','Time History Solution')
+% plot(x,y)
+
+%vdot = K_Xs(:,1).*A(1,1) + K_Xs(:,2).*A(1,2) + U'.*B(1,1);
+
+%% Sub plots
+subplot(2,2,[1 2])
+x = linspace(0,10);
+y1 = sin(x);
+plot(t,y2n,'x');
+hold on
+plot(t,K_preds,'-','LineWidth',2)
+plot(t,test.steer,'-','LineWidth',2)
+legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y','steer');
+title('Kalman Predicted Measurements vs time | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
+
+
+subplot(2,2,3)
+beta = K_Xs(:,1)/u;
+beta_dot = [0; diff(beta)];
+plot(t,K_Xs,'--');
+hold on
+plot(t,beta,'-');
+plot(t,test.steer,'-');
+legend('K_v','K_r','K_b','Steer');
+title('Kalman Predicted States vs time  | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
+
+
+
+subplot(2,2,4)
+plot(car_x,car_y);
+title('Time History Solution');
+% plot(t,beta.*sign(U'),'-');
+% title('Beta*Beta\_Dot')
+
+% figure('Name','Time History Solution')
+% plot(car_x,car_y)
+
+
+% % figure('Name','Time History Solution')
+% % plot(x,y)
+% 
+% subplot(2,2,4)
+% y4 = sin(8*x);
+% plot(x,y4)
+% title('Subplot 4: sin(8x)')
+
+
+
+
+
