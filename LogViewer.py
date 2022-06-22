@@ -7,13 +7,15 @@ Created on Tue Jun 21 18:47:37 2022
 
 
 
+
+# 78.5 diameter, outside tire to outside tire inches at full lock
 #  %matplotlib qt
 
 import csv
 import matplotlib.pyplot as plt
 import pylab
 
-fname = "1655852834.2755587.txt"
+fname = "1655854509.4093537.txt"
 
 f = open(fname, 'r')
 
@@ -48,6 +50,8 @@ fig.set_size_inches(16,16)
 p1, = ax1.plot(throttle, color='red')
 ax2 = ax1.twinx()
 p2, = ax2.plot(r, color='blue')
-ax1.legend((p1,p2),('throttle','r'))
+ax3 = ax1.twinx()
+p3, = ax2.plot(y, color='blue')
+ax1.legend((p1,p2,p3),('throttle','r','x'))
 fig.tight_layout()
 plt.show()
