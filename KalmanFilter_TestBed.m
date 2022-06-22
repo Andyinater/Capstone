@@ -1,5 +1,5 @@
 %% Define Vehicle Parameters
-cs = 280
+cs = 180;
 cf = cs;  % N/rad
 cr = cs;  % N/rad
 I = 0.093;  % Izz, kg*m^2
@@ -12,9 +12,9 @@ u = 1.713; % m/s
 
 
 %% Get Time and Input series
-test = tdfread('left_fixed.txt','\t');
+test = tdfread('RandomDrive.txt','\t');
 t = test.t;
-U = -(0.311/1.08)*(test.steer-0.1);
+U = -(0.311/1.08)*(test.steer-0.0);
 dt = 0.005; % approximately
 InputSeries = [t U];
 y2n = [test.Gr*(2*pi/360) -1*test.Ay];
