@@ -243,7 +243,8 @@ if __name__ == '__main__':
                     for d in ALLDATA:
                         for i in d:
                             f.write(str(i))
-                            f.write("\t")
+                            if i != d[-1]:
+                                f.write("\t")
                         f.write("\n")
                     f.close()
                     ALLDATA = []
