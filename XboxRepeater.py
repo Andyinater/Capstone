@@ -240,6 +240,7 @@ if __name__ == '__main__':
                     print("SAVE DATA")
                     fname = str(time.time()) + ".txt"
                     f = open(fname,'w')
+                    f.write("steer\tthrottle\tmanflag\tdsx\tdsy\tbs\taflag\tGf\tAx\tAy\n")
                     for d in ALLDATA:
                         for i in d:
                             f.write(str(i))
