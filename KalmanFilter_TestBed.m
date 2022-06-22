@@ -12,7 +12,7 @@ u = 1.713; % m/s
 
 
 %% Get Time and Input series
-test = tdfread('RandomDrive.txt','\t');
+test = tdfread('left_fixed.txt','\t');
 t = test.t;
 U = -(0.311/1.08)*(test.steer-0.1);
 dt = 0.005; % approximately
@@ -28,10 +28,10 @@ X_0 = [0;0];
 P_0 = 0*CovarShape;
 
 %Process error matrix
-Q = 0.1*CovarShape;
+Q = 0.5*CovarShape;
 
 %Observation error matrix
-R = 3*CovarShape;
+R = 0.5*CovarShape;
 
 %% Define System Model
 % Kalman bicycle model
@@ -127,15 +127,20 @@ figure('Name','Kalman Predicted Measurements vs time')
 plot(t,y2n,'x');
 hold on
 plot(t,K_preds,'-','LineWidth',2)
+plot(t,test.steer,'-','LineWidth',2)
 % legend('Measured_r','Measured_a_y')%,'Kalman Predicted_1_,_r','Kalman Predicted_2_,_a_y');
-legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y');
+legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y','steer');
 
 
 
-% figure('Name','Kalman Predicted States vs time')
-% plot(t,K_Xs,'--');
-% legend('K_v','K_r');
-% 
+figure('Name','Kalman Predicted States vs time')
+beta = K_Xs(:,1)/u;
+plot(t,K_Xs,'--');
+hold on
+plot(t,beta,'-');
+plot(t,test.steer,'-');
+legend('K_v','K_r','K_b','Steer');
+
 % figure('Name','Kalman Predicted Dots vs time')
 % plot(t,K_dots,'--')
 % legend('K_v_-_d_o_t','K_r_-_d_o_t')
@@ -154,3 +159,18 @@ legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y');
 % 
 % figure('Name','P_k0 vs time')
 % plot(t,P_k0s)
+
+
+%% attempt time history solution
+dt = zeros(size(t));
+heading = zeros(size(t));
+x = zeros(size(t));
+y = zeros(size(t));
+for i = 1:size(t)-1
+    dt(i) = t(i+1) - t(i);
+    heading(i+1) = heading(i) + K_Xs(i,2)*dt(i);
+    x(i+1) = x(i) + (u*cos(heading(i)) + K_Xs(i,1)*sin(heading(i)))*dt(i);
+    y(i+1) = y(i) + (u*sin(heading(i)) + K_Xs(i,1)*cos(heading(i)))*dt(i);
+end
+figure('Name','Time History Solution')
+plot(x,y)
