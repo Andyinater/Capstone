@@ -191,8 +191,7 @@ void loop() {
         Serial.println(mapfloat(funcSteer,-1,1,steerMax,steerMin));
         steerServo.writeMicroseconds(mapfloat(funcSteer,-1,1,steerMax,steerMin));
 
-        throttleServo.writeMicroseconds(mapfloat(rData.throttle,-1,1,throttleMin,throttleMax));
-
+        
         if (mpu.update()) {
           static uint32_t prev_ms = millis();
           if (millis() > prev_ms + 25) {
@@ -208,6 +207,9 @@ void loop() {
     } else{
       startTime = -1;
     }
+    steerServo.writeMicroseconds(mapfloat(rData.steer,-1,1,steerMax,steerMin));
+    throttleServo.writeMicroseconds(mapfloat(rData.throttle,-1,1,throttleMin,throttleMax));
+
   }
 
 }
@@ -243,7 +245,7 @@ void initIMU(){
 void update_IMU_VALS(){
   IMU_VALS[0] = millis()/1000.0;
   IMU_VALS[1] = mpu.getGyroZ();
-  IMU_VALS[2] = mpu.getAccY()*9.81;
-  IMU_VALS[3] = mpu.getAccX()*9.81;
+  IMU_VALS[2] = mpu.getAccX()*9.81;
+  IMU_VALS[3] = mpu.getAccY()*9.81;
 
 }
