@@ -46,7 +46,19 @@ def getData(scomm):
             data = convertBytes(body)
             
             return [body,data]
-    
+
+def fixFileErrors(fname):
+    f = open(fname+'.txt','r')
+    ff = open(fname + '_fixed.txt','w')
+    ls = f.readlines()
+    for i in range(len(ls)):
+        if ls[i].count('\t') != 10:
+            print(i)
+            print(ls[i])
+        else:
+            ff.write(ls[i])
+    f.close()
+    ff.close()
 
 
 class TestbedController(object):
