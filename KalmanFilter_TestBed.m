@@ -10,15 +10,15 @@ b = 0.147;
 wb = a + b;
 fwf = b/wb;
 fwf = fwf - 0.0;
-b = fwf*wb
-a = wb-b
+b = fwf*wb;
+a = wb-b;
 
 m = 45.92/9.81;
 u = 1.4258 + 0; % m/s
 
 
 %% Get Time and Input series
-test = tdfread('RandomDrive.txt','\t');
+test = tdfread('SlowPathTest.txt','\t');
 t = test.t;
 U = -(0.311/1.08)*(test.steer-0.08);
 dt = 0.005; % approximately
@@ -34,10 +34,10 @@ X_0 = [0;0];
 P_0 = 2*CovarShape;
 
 %Process error matrix
-Q = 1*CovarShape;
+Q = 0.1*CovarShape;
 
 %Observation error matrix
-R = 1*CovarShape;
+R = 0.02*CovarShape;
 
 %% Define System Model
 % Kalman bicycle model
@@ -60,7 +60,6 @@ Adt = sysD.A;
 Bdt = sysD.B;
 Cdt = sysD.C;
 Ddt = sysD.D;
-
 %% Begin Kalman Loop
 
 % Set initial values
@@ -125,7 +124,62 @@ for i = 1:size(U,2) % For every input
     P_k0 = (eye(2)-K*Cdt)*P_kp;
     P_k0s(i,:) = [P_k0(1,:) P_k0(2,:)]; 
 end
+%% Get Time History Solution
+dt = zeros(size(t));
+heading = zeros(size(t));
+car_x = zeros(size(t));
+car_y = zeros(size(t));
+for i = 1:size(t)-1
+    dt(i) = t(i+1) - t(i);
+    heading(i+1) = heading(i) + K_Xs(i,2)*dt(i);
+    car_x(i+1) = car_x(i) + ((u)*cos(heading(i)) + K_Xs(i,1)*sin(heading(i)))*dt(i);
+    car_y(i+1) = car_y(i) + ((u)*sin(heading(i)) + K_Xs(i,1)*cos(heading(i)))*dt(i);
+end
 
+% figure('Name','Time History Solution')
+% plot(x,y)
+
+%vdot = K_Xs(:,1).*A(1,1) + K_Xs(:,2).*A(1,2) + U'.*B(1,1);
+%% Sub plots
+subplot('Position',[0.05 0.5 0.9 0.45])
+plot(t,y2n,'x');
+hold on
+plot(t,K_preds,'-','LineWidth',1)
+plot(t,test.steer,'-','LineWidth',2)
+legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y','steer');
+title('Kalman Predicted Measurements vs time | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
+
+
+subplot('Position', [0.05 0.05 0.4 0.39])
+beta = K_Xs(:,1)/u;
+beta_dot = [0; diff(beta)];
+plot(t,K_Xs,'--');
+hold on
+plot(t,beta,'-');
+plot(t,test.steer,'-');
+legend('K_v','K_r','K_b','Steer');
+title('Kalman Predicted States vs time  | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
+
+
+
+subplot('Position', [0.5 0.05 0.45 0.39])
+plot(car_x,car_y);
+title('Time History Solution');
+% plot(t,beta.*sign(U'),'-');
+% title('Beta*Beta\_Dot')
+
+% figure('Name','Time History Solution')
+% plot(car_x,car_y)
+
+
+% % figure('Name','Time History Solution')
+% % plot(x,y)
+% 
+% subplot(2,2,4)
+% y4 = sin(8*x);
+% plot(x,y4)
+% title('Subplot 4: sin(8x)')
+%% Old Plots
 % % Plot noisy measurements and kalman predictions
 % figure('Name','Kalman Predicted Measurements vs time | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
 % % plot(t,y2,'-');
@@ -165,65 +219,6 @@ end
 % 
 % figure('Name','P_k0 vs time')
 % plot(t,P_k0s)
-
-%% attempt time history solution
-dt = zeros(size(t));
-heading = zeros(size(t));
-car_x = zeros(size(t));
-car_y = zeros(size(t));
-for i = 1:size(t)-1
-    dt(i) = t(i+1) - t(i);
-    heading(i+1) = heading(i) + K_Xs(i,2)*dt(i);
-    car_x(i+1) = car_x(i) + ((u)*cos(heading(i)) + K_Xs(i,1)*sin(heading(i)))*dt(i);
-    car_y(i+1) = car_y(i) + ((u)*sin(heading(i)) + K_Xs(i,1)*cos(heading(i)))*dt(i);
-end
-
-% figure('Name','Time History Solution')
-% plot(x,y)
-
-%vdot = K_Xs(:,1).*A(1,1) + K_Xs(:,2).*A(1,2) + U'.*B(1,1);
-
-%% Sub plots
-subplot(2,2,[1 2])
-x = linspace(0,10);
-y1 = sin(x);
-plot(t,y2n,'x');
-hold on
-plot(t,K_preds,'-','LineWidth',2)
-plot(t,test.steer,'-','LineWidth',2)
-legend('M_r','M_a_y','K_1_,_r','K_2_,_a_y','steer');
-title('Kalman Predicted Measurements vs time | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
-
-
-subplot(2,2,3)
-beta = K_Xs(:,1)/u;
-beta_dot = [0; diff(beta)];
-plot(t,K_Xs,'--');
-hold on
-plot(t,beta,'-');
-plot(t,test.steer,'-');
-legend('K_v','K_r','K_b','Steer');
-title('Kalman Predicted States vs time  | Q = ' + string(Q(1,1)) + ', R = ' + string(R(1,1)))
-
-
-
-subplot(2,2,4)
-plot(car_x,car_y);
-title('Time History Solution');
-% plot(t,beta.*sign(U'),'-');
-% title('Beta*Beta\_Dot')
-
-% figure('Name','Time History Solution')
-% plot(car_x,car_y)
-
-
-% % figure('Name','Time History Solution')
-% % plot(x,y)
-% 
-% subplot(2,2,4)
-% y4 = sin(8*x);
-% plot(x,y4)
-% title('Subplot 4: sin(8x)')
 
 
 
