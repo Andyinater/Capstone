@@ -164,6 +164,7 @@ title('Kalman Predicted States vs time  | Q = ' + string(Q(1,1)) + ', R = ' + st
 
 subplot('Position', [0.5 0.05 0.45 0.39])
 plot(car_x,car_y);
+axis equal
 title('Time History Solution');
 % plot(t,beta.*sign(U'),'-');
 % title('Beta*Beta\_Dot')
