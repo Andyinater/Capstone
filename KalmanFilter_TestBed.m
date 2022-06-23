@@ -34,10 +34,10 @@ X_0 = [0;0];
 P_0 = 2*CovarShape;
 
 %Process error matrix
-Q = 0.5*CovarShape;
+Q = 1*CovarShape;
 
 %Observation error matrix
-R = 0.5*CovarShape;
+R = 1*CovarShape;
 
 %% Define System Model
 % Kalman bicycle model
