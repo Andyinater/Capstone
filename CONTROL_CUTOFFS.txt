@@ -1,0 +1,4 @@
+speed	yawcutoff
+6	2
+12	3
+18	2.5

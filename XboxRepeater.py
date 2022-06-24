@@ -128,7 +128,7 @@ class TestbedController(object):
         else:
             aBool = False
         
-        controlSpeed = (self.RightTrigger - self.LeftTrigger)/4
+        controlSpeed = (self.RightTrigger - self.LeftTrigger)/1
         # if self.BumperSum != 0 & self.ManualDriveMode == True:
         #     controlSpeed = 0.02*self.BumperSum
             
@@ -277,6 +277,15 @@ if __name__ == '__main__':
                 if time.time() - lastTime > 1:
                     joy.printControllerData()
                     lastTime=time.time()
+                    
+                if joy.A and rData != None: # control loop
+                    yawrate = rData[-1][-3]
+                    if  yawrate != 0: # if there is some yaw rate
+                        print(yawrate*2*3.14159/360)
+                        if abs(yawrate*2*3.14159/360) > joy.DPadSumY*0.1: # if over the limit
+                            print("CUT: \t" + str(yawrate*2*3.14159/360))
+                            ProgMan[1] = ProgMan[1]*0.1
+                            
                 sendBytes(ProgMan,serialcomm)
             else:
                 
