@@ -41,7 +41,7 @@ class SKF:
         self.covarShape = numpy.array([[1,0],[0,1]])
         
 
-        self.Q = 0.0001*self.covarShape
+        self.Q = 0.1*self.covarShape
         self.R = 0.1*self.covarShape
         
         self.A = {} 
@@ -155,7 +155,7 @@ s = round(1.4258*(6/6), 2)
 speeds = makeSpeedRange(0.01,1,0.01)
 
 testBed = SKF(speeds)
-h = testBed.simFile("circle_speedup_fixed.txt")
+h = testBed.simFile("RandomDrive_fixed.txt")
 vs = []
 rs = []
 bs = []
