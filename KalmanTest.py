@@ -26,7 +26,7 @@ class SKF:
         self.SC = -0.08
         
         self.cf = 180.0
-        self.cr = 180.0
+        self.cr = 180.0- 30
         
         self.m = 45.92/9.81
         self.I = 0.093
@@ -39,6 +39,7 @@ class SKF:
         self.preState = self.state
         self.stateHistory = []
         self.betaHistory = []
+        self.d = []
         
         self.lastu = 0
         
@@ -46,7 +47,7 @@ class SKF:
         
 
         self.Q = 1*self.covarShape
-        self.R = 1*self.covarShape
+        self.R = 0.1*self.covarShape
         
         self.A = {} 
         self.B = {}
@@ -106,8 +107,24 @@ class SKF:
                 
             self.K[u] = K
             
-    def predictNextState(self, speedControl, steer, measurement): # measurement is [r, ay]
+    def resetSKF(self):
+        self.X_k0 = numpy.array([[0],[0]])
+        self.X_k1 = numpy.array([[0],[0]])
+        self.X_kp1 = numpy.array([[0],[0]])
+        
+        
+    def predictNextState(self, speedControl, steer, measurement, onTime): # measurement is [r, ay]
         # s = (-0.311/1.08)*(steer + self.SC)
+        dVar = lambda j:None
+        dVar.speedControl = speedControl
+        dVar.steer = steer
+        dVar.t = onTime
+        dVar.r = measurement[0]
+        dVar.Ay = measurement[1]
+        
+        self.d.append(dVar)
+        
+        
         
         s = (-0.311/1.08)*(steer + self.SC)
         if self.lastu != 0:
@@ -207,20 +224,20 @@ def makeSpeedRange(start,stop,step):
         
     return r
 
-s = round(1.4258*(6/6), 2)
-speeds = makeSpeedRange(0.01,1,0.01)
-
-testBed = SKF(speeds)
-h = testBed.simFile("circle_speedup_fixed.txt")
-vs = []
-rs = []
-bs = []
-for i in h[1]:
-    vs.append(i[0])
-    rs.append(i[1])
-    bs.append(i[2])
-    
-testBed.showResults()
+#s = round(1.4258*(6/6), 2)
+#speeds = makeSpeedRange(0.01,1,0.01)
+#
+#testBed = SKF(speeds)
+#h = testBed.simFile("circle_speedup_fixed.txt")
+#vs = []
+#rs = []
+#bs = []
+#for i in h[1]:
+#    vs.append(i[0])
+#    rs.append(i[1])
+#    bs.append(i[2])
+#    
+#testBed.showResults()
 
 
     

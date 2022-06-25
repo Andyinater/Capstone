@@ -6,6 +6,8 @@ Created on Wed Jun  8 19:16:12 2022
 """
 
 from inputs import get_gamepad
+import KalmanTest
+from KalmanTest import SKF
 import math
 import threading
 import matplotlib.pyplot as plt
@@ -13,6 +15,17 @@ import matplotlib.pyplot as plt
 import serial
 import struct
 import time
+
+def makeSpeedRange(start,stop,step):
+    r = []
+    s = (stop-start)//step + 2
+    for i in range(int(s)):
+        r.append(round(start+step*i,2))
+        
+    return r
+
+#s = round(1.4258*(6/6), 2)
+#speeds = makeSpeedRange(0.01,1,0.01)
 
 
 def userToServo(): # use with programmed bed
@@ -96,6 +109,7 @@ class TestbedController(object):
         self.DPadSumY = 0
         self.BumperSum = 0
         self.ManualDriveMode = True # True - manual driving, False - programmed manouver
+        self.YToggle = False
 
         self._monitor_thread = threading.Thread(target=self._monitor_controller, args=())
         self._monitor_thread.daemon = True
@@ -140,7 +154,7 @@ class TestbedController(object):
             elif controlSpeed < MinS:
                 controlSpeed = MinS
             
-        SC = 4
+        SC = -11
         controlSteer = self.LeftJoystickX + 0.02*SC
         if self.DPadSumX != 0:
             controlSteer = 0.02*self.DPadSumX
@@ -179,6 +193,10 @@ class TestbedController(object):
                 elif event.code == 'BTN_WEST':
                     self.X = event.state
                 elif event.code == 'BTN_NORTH':
+                    if self.Y == 0:
+                        self.YToggle = not(self.YToggle)
+                        if self.YToggle == True:
+                            TB.resetSKF()
                     self.Y = event.state
                 elif event.code == 'BTN_EAST':
                     self.B = event.state
@@ -225,6 +243,10 @@ startTime = 0
 lastTime = 0
 intervalTime = 0.01
 
+
+
+lastIntervention = 0
+
 ys = []
 ts = []
 # if shit is laggy, close the whole kernal, interrupt doesn't help
@@ -235,6 +257,9 @@ ALLDATA = []
 
 if __name__ == '__main__':
     joy = TestbedController()
+    s = round(1.4258*(6/6), 2)
+    speeds = makeSpeedRange(0.01,1,0.01)
+    TB = SKF(speeds)
     
     serialcomm = serial.Serial(port = 'COM5',baudrate=115200,parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE,bytesize=serial.EIGHTBITS,)
     serialcomm.timeout = 0.1
@@ -269,22 +294,47 @@ if __name__ == '__main__':
                 if rData != None:
                     # print(rData[-1])
                     ALLDATA.append(rData[-1])
+                    pass
                 else:
                     # print(ProgMan)
                     pass
+            if joy.YToggle:
+                ProgMan[6] = True
+                rData = getData(serialcomm)
             
             if joy.ManualDriveMode:
                 if time.time() - lastTime > 1:
                     joy.printControllerData()
                     lastTime=time.time()
                     
-                if joy.A and rData != None: # control loop
+                if joy.YToggle and rData != None: # control loop
                     yawrate = rData[-1][-3]
-                    if  yawrate != 0: # if there is some yaw rate
-                        print(yawrate*2*3.14159/360)
-                        if abs(yawrate*2*3.14159/360) > joy.DPadSumY*0.1: # if over the limit
-                            print("CUT: \t" + str(yawrate*2*3.14159/360))
-                            ProgMan[1] = ProgMan[1]*0.1
+                    Ay = rData[-1][-1]
+                    steer = rData[-1][0] + 0.02*11
+                    throttle = round(rData[-1][1],2)
+                    onTime = rData[-1][-4]
+                    
+                    if throttle > 0:    
+                        TB.predictNextState(throttle, steer, [yawrate, Ay], onTime)
+                        
+                        if (abs(TB.beta) > joy.DPadSumY*0.1) and ProgMan[1] > 0:
+                            print("CUTOFF:" + str(TB.beta))
+                            ProgMan[1] = 0.14
+                            
+#                            ProgMan[0] = ProgMan[0]*0
+                    
+                    # basic yaw rate control
+#                    if  yawrate != 0: # if there is some yaw rate
+##                        print(yawrate*2*3.14159/360)
+#                        if (abs(yawrate*2*3.14159/360) > joy.DPadSumY*0.1) & (time.time() - lastIntervention > 0.0): # if over the limit
+#                            lastIntervention = time.time()
+#                            print("CUT: \t" + str(yawrate*2*3.14159/360))
+#                            
+#                            # Brake control
+#                            ProgMan[1] = ProgMan[1]*0.2
+#                            
+#                            # Steer Control
+##                            ProgMan[0] = -1* ProgMan[0]
                             
                 sendBytes(ProgMan,serialcomm)
             else:
